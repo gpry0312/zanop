@@ -46,9 +46,10 @@
   --accent: #6CC2AE; --accent-soft: #1E332E; --on-accent: #0E1A17; --night: #9DAAF0; --night-soft: #252A44;
   --warn: #FF8A80; --warn-soft: #3A1E1C; --caution: #F2B45A; --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark;
 }
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; padding: 0 12px 24px; }
-button { font: inherit; color: inherit; }
+button { font: inherit; color: inherit; -webkit-appearance: none; appearance: none; margin: 0; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
 .app { max-width: 440px; margin: 0 auto; }
@@ -76,8 +77,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .field { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 6px; padding: 4px 12px; min-height: 50px; }
 .field + .field { border-top: 1px solid var(--line); }
 .field label { font-size: 14px; font-weight: 600; }
-.field input { width: 100%; min-width: 0; border: 0; background: transparent; color: var(--ink); font-family: var(--f-num); font-size: 21px; font-weight: 600; font-variant-numeric: tabular-nums; -webkit-appearance: none; appearance: none; min-height: 40px; padding: 0; }
-.field input.date { font-size: 18px; }
+/* 날짜·시간: 휴대폰 기본 표시 대신 직접 그린 값(모든 기기에서 같은 모양), 투명한 실제 입력칸이 위에 겹쳐 있어 누르면 기기 선택기가 열림 */
+.pick { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; height: 42px; border-radius: 8px; }
+.pick:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pick .pv { font-family: var(--f-num); font-size: 21px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink); }
+.pick .pv small { font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 4px; }
+.pick .caret { font-size: 11px; color: var(--muted); }
+.pick input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; margin: 0; padding: 0; font-size: 16px; -webkit-appearance: none; appearance: none; cursor: pointer; z-index: 1; }
 .field .hint { font-size: 11px; color: var(--muted); text-align: right; white-space: nowrap; }
 .field .hint button { border: 0; background: none; color: var(--accent); font-weight: 600; padding: 0; cursor: pointer; text-decoration: underline; font-size: 11px; }
 
@@ -87,7 +93,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .res-top .lab b { display: block; color: var(--ink); font-family: var(--f-num); font-size: 13px; font-weight: 600; }
 .res-top .val { font-family: var(--f-num); font-size: 40px; font-weight: 600; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
 .res-top .val span { font-family: var(--f-body); font-size: 14px; font-weight: 600; color: var(--ink); margin-left: 3px; }
-.res-grid { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); }
+.res-grid { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--line); }
 .res-grid div { padding: 7px 4px; text-align: center; display: flex; flex-direction: column; min-width: 0; }
 .res-grid div + div { border-left: 1px solid var(--line); }
 .res-grid b { font-size: 11px; color: var(--muted); font-weight: 500; white-space: nowrap; }
@@ -134,6 +140,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .wlog-foot { display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); background: var(--bg); padding: 8px 14px; font-size: 12.5px; color: var(--muted); }
 .wlog-foot b { font-family: var(--f-num); color: var(--ink); }
 .wlog-foot b.ot { color: var(--accent); }
+.early-tg { justify-self: end; border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; position: relative; z-index: 2; }
+.early-tg[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
 .units { display: flex; gap: 4px; align-items: center; }
 .units button { font-family: var(--f-num); font-size: 11.5px; border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
@@ -258,17 +266,17 @@ body{margin:0}
     <div class="card fields">
       <div class="field">
         <label for="t-date">날짜</label>
-        <input type="date" id="t-date" class="date">
+        <div class="pick"><span class="pv" id="pv-date"></span><span class="caret" aria-hidden="true">▾</span><input type="date" id="t-date" class="date"></div>
         <span class="hint" id="h-date"></span>
       </div>
       <div class="field">
         <label for="t-in">출근</label>
-        <input type="time" id="t-in" value="07:00" step="60">
-        <span class="hint" id="h-in"></span>
+        <div class="pick"><span class="pv" id="pv-in">07:00</span><span class="caret" aria-hidden="true">▾</span><input type="time" id="t-in" value="07:00" step="60"></div>
+        <button type="button" class="early-tg" id="b-early" aria-pressed="false">조기출근</button>
       </div>
       <div class="field">
         <label for="t-out">퇴근</label>
-        <input type="time" id="t-out" value="21:00" step="60">
+        <div class="pick"><span class="pv" id="pv-out">21:00</span><span class="caret" aria-hidden="true">▾</span><input type="time" id="t-out" value="21:00" step="60"></div>
         <span class="hint" id="h-out"></span>
       </div>
     </div>
@@ -280,8 +288,9 @@ body{margin:0}
       </div>
       <div class="res-grid">
         <div><b>정규</b><span id="r-reg">8:00</span></div>
-        <div><b>기본잔업</b><span id="r-bot">1:00</span></div>
-        <div><b>추가잔업</b><span id="r-eot">3:00</span></div>
+        <div><b>조기</b><span id="r-ear">0:00</span></div>
+        <div><b>기본</b><span id="r-bot">1:00</span></div>
+        <div><b>추가</b><span id="r-eot">3:00</span></div>
         <div><b>휴게</b><span id="r-brk">1:00</span></div>
       </div>
       <div class="next">
@@ -336,7 +345,7 @@ body{margin:0}
     <details>
       <summary>계산 방법</summary>
       <ol>
-        <li>기본 시작 전에 찍은 출근은 인정하지 않습니다.</li>
+        <li>기본 시작 전에 찍은 출근은 인정하지 않습니다. 단, <b>조기출근</b>을 켜면 출근~기본 시작 시간이 조기 잔업으로 인정됩니다(인정 단위로 내림). 새 날짜는 항상 꺼진 상태로 시작합니다.</li>
         <li>휴게 1시간(주간 11:50–12:50, 야간 23:00–24:00)은 인정 구간에 걸친 만큼 뺍니다.</li>
         <li>기본시간 안의 근무는 정규 8시간을 먼저 채우고, 남는 1시간이 기본 잔업입니다.</li>
         <li>기본 종료(주간 18:00, 야간 04:00) 이후는 추가 잔업이며, 인정 단위로 내림합니다.</li>
@@ -424,7 +433,7 @@ body{margin:0}
   function LIM() { return state.limit * 60; }
   var WD = ["일", "월", "화", "수", "목", "금", "토"];
   var LOCAL_KEY = "ot-records-v1";
-  var state = { shift: "day", unit: 1, ym: null, tab: "in", limit: 58, theme: null };
+  var state = { shift: "day", unit: 1, ym: null, tab: "in", limit: 58, theme: null, early: false };
   var store = { mode: "loading", recs: [], col: null, unsub: null };
 
   var $ = function (id) { return document.getElementById(id); };
@@ -455,7 +464,7 @@ body{margin:0}
   var toastT;
   function toast(msg) { var t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, 2400); }
 
-  function compute(shift, tin, tout, unit) {
+  function compute(shift, tin, tout, unit, early) {
     var s = SHIFTS[shift], cin = toMin(tin), c0 = toMin(tout);
     if (!s || cin === null || c0 === null) return null;
     var cout = c0 + (c0 < cin ? 1440 : 0);
@@ -465,11 +474,14 @@ body{margin:0}
     var brk = Math.max(0, Math.min(endRec, s.brk + BREAK) - Math.max(start, s.brk));
     var base = Math.max(0, Math.min(endRec, s.end) - start - brk);
     var reg = Math.min(REGULAR, base), bot = base - reg, eot = Math.max(0, endRec - s.end);
-    return { s: s, cin: cin, cout: cout, start: start, endRec: endRec, brk: brk, reg: reg, bot: bot, eot: eot, ot: bot + eot, next: cout + REST };
+    // 조기출근: 켜져 있으면 출근~기본 시작 사이를 잔업으로 인정 (인정 단위로 내림)
+    var ear = early && cin < s.start ? Math.floor((s.start - cin) / unit) * unit : 0;
+    var shown = ear ? s.start - ear : start;
+    return { s: s, cin: cin, cout: cout, start: shown, endRec: endRec, brk: brk, reg: reg, ear: ear, bot: bot, eot: eot, ot: ear + bot + eot, next: cout + REST };
   }
   function enriched() {
     return store.recs.map(function (r) {
-      return { date: r.date, shift: r.shift, tin: r.tin, tout: r.tout, n: dayNum(r.date), r: compute(r.shift, r.tin, r.tout, state.unit) };
+      return { date: r.date, shift: r.shift, tin: r.tin, tout: r.tout, early: !!r.early, n: dayNum(r.date), r: compute(r.shift, r.tin, r.tout, state.unit, !!r.early) };
     }).filter(function (x) { return x.r; }).sort(function (a, b) { return a.n - b.n; });
   }
   function flagsFor(sorted) {
@@ -527,6 +539,9 @@ body{margin:0}
 
   function calc() {
     var s = SHIFTS[state.shift], d0 = dayNum(formDate());
+    $("pv-date").textContent = label(d0);
+    $("pv-in").textContent = toMin(inEl.value) !== null ? inEl.value : "--:--";
+    $("pv-out").innerHTML = toMin(outEl.value) !== null ? outEl.value + (toMin(outEl.value) < (toMin(inEl.value) || 0) ? "<small>+1</small>" : "") : "--:--";
     var hd = $("h-date");
     if (dateEl.value && dateEl.value !== todayStr()) {
       hd.innerHTML = wk(d0) + " · <button type=\"button\" id=\"b-today\">오늘로</button>";
@@ -535,18 +550,20 @@ body{margin:0}
 
     var exists = !!findRec(formDate());
     $("b-save").textContent = label(d0) + (exists ? " 수정 저장" : " 저장");
-    var r = compute(state.shift, inEl.value, outEl.value, state.unit);
+    var r = compute(state.shift, inEl.value, outEl.value, state.unit, state.early);
     $("b-save").disabled = !r || store.mode === "loading";
     if (!r) return;
 
     $("r-total").innerHTML = hm(r.ot) + "<span>시간</span>";
     $("r-span").textContent = clock(r.start) + " – " + clock(r.endRec) + (r.endRec >= 1440 ? " (+1)" : "");
     $("r-reg").textContent = hm(r.reg);
+    $("r-ear").textContent = hm(r.ear);
     $("r-bot").textContent = hm(r.bot);
     $("r-eot").textContent = hm(r.eot);
     $("r-brk").textContent = hm(r.brk);
     $("r-next").innerHTML = "<small>" + label(d0 + Math.floor(r.next / 1440)) + "</small>" + clock(r.next);
-    $("h-in").textContent = r.cin < s.start ? clock(s.start) + "부터 인정" : (r.cin > s.start ? "지각 " + hm(r.cin - s.start) : "");
+    $("b-early").setAttribute("aria-pressed", state.early);
+    $("b-early").textContent = state.early && r.ear ? "조기 " + hm(r.ear) : "조기출근";
     $("h-out").textContent = r.cout >= 1440 ? "다음 날 퇴근" : "";
 
     var w = $("r-warn"), nextStart = s.start + 1440;
@@ -577,7 +594,7 @@ body{margin:0}
         '<span class="t">' + x.tin + "→" + x.tout + '</span><span class="o">' + hm(x.r.ot) + "</span>";
       b.setAttribute("aria-label", label(x.n) + " " + SHIFTS[x.shift].name + " 잔업 " + hm(x.r.ot) + ", 눌러서 수정");
       b.addEventListener("click", function () {
-        dateEl.value = x.date; inEl.value = x.tin; outEl.value = x.tout;
+        dateEl.value = x.date; inEl.value = x.tin; outEl.value = x.tout; state.early = !!x.early;
         setShift(x.shift);
         window.scrollTo({ top: 0, behavior: "smooth" });
         toast(label(x.n) + " 기록을 불러왔습니다. 고친 뒤 저장하세요.");
@@ -597,7 +614,7 @@ body{margin:0}
     store.recs.forEach(function (x) {
       var n = dayNum(x.date);
       if (n < ws || n > we || n === d0) return;
-      var c = compute(x.shift, x.tin, x.tout, state.unit); if (!c) return;
+      var c = compute(x.shift, x.tin, x.tout, state.unit, !!x.early); if (!c) return;
       total += c.reg + c.ot; ot += c.ot; days++; have[n] = true;
     });
     if (r) { total += r.reg + r.ot; ot += r.ot; days++; have[d0] = true; }
@@ -641,7 +658,15 @@ body{margin:0}
     });
   });
   // 아이폰 Safari는 날짜·시간 선택기를 닫을 때 change만 보내는 버전이 있어 둘 다 듣습니다
-  [dateEl, inEl, outEl].forEach(function (el) { el.addEventListener("input", calc); el.addEventListener("change", calc); });
+  var earlyTouched = false, earlySynced = false;
+  $("b-early").addEventListener("click", function () { earlyTouched = true; state.early = !state.early; calc(); });
+  // 날짜를 바꾸면: 그 날 저장 기록이 있으면 기록의 조기출근 상태, 없으면 꺼짐
+  function syncEarlyForDate() { earlyTouched = true; var rec = findRec(formDate()); state.early = !!(rec && rec.early); }
+  dateEl.addEventListener("input", syncEarlyForDate); dateEl.addEventListener("change", syncEarlyForDate);
+  [dateEl, inEl, outEl].forEach(function (el) {
+    el.addEventListener("input", calc); el.addEventListener("change", calc);
+    el.addEventListener("click", function () { try { if (el.showPicker) el.showPicker(); } catch (e) {} });
+  });
   function markLimit() {
     document.querySelectorAll(".limits button").forEach(function (x) { x.setAttribute("aria-pressed", +x.dataset.l === state.limit); });
     $("m-lim").textContent = "한도 " + state.limit + "h";
@@ -756,9 +781,9 @@ body{margin:0}
   /* ---------- save ---------- */
   $("b-save").addEventListener("click", function () {
     var date = formDate();
-    if (!compute(state.shift, inEl.value, outEl.value, state.unit)) return;
+    if (!compute(state.shift, inEl.value, outEl.value, state.unit, state.early)) return;
     var existed = !!findRec(date);
-    var rec = { date: date, shift: state.shift, tin: inEl.value, tout: outEl.value, updatedAt: new Date().toISOString() };
+    var rec = { date: date, shift: state.shift, tin: inEl.value, tout: outEl.value, early: !!state.early, updatedAt: new Date().toISOString() };
     var btn = $("b-save"); btn.disabled = true;
     saveRec(rec).then(function () {
       toast(label(dayNum(date)) + " 기록을 " + (existed ? "수정했습니다" : "저장했습니다"));
@@ -870,12 +895,15 @@ body{margin:0}
     renderBoard();
   }
   function loadToInput(x) {
-    dateEl.value = x.date; inEl.value = x.tin; outEl.value = x.tout;
+    dateEl.value = x.date; inEl.value = x.tin; outEl.value = x.tout; state.early = !!x.early;
     closeSheet(); setShift(x.shift); setTab("in");
     toast(label(x.n) + " 기록을 불러왔습니다. 고친 뒤 저장하세요.");
   }
 
-  function renderAll() { calc(); renderBoard(); }
+  function renderAll() {
+    if (!earlySynced && store.mode !== "loading") { earlySynced = true; if (!earlyTouched) { var rec = findRec(formDate()); state.early = !!(rec && rec.early); } }
+    calc(); renderBoard();
+  }
 
   /* ---------- Excel ---------- */
   var XLSX_URL = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
@@ -893,31 +921,31 @@ body{margin:0}
     var R = monthRange(), all = enriched(), flags = flagsFor(all);
     var inMonth = all.filter(function (x) { return x.n >= R.first && x.n < R.next; });
     var w = [[R.y + "년 " + R.m + "월 출/퇴근 잔업 · 주별 요약 (일~토, 주 " + state.limit + "시간 기준)"], [],
-      ["주차", "기간 (일~토)", "근무일", "정규", "기본잔업", "추가잔업", "총잔업", "근로합계", state.limit + "h까지 남음", "상태"]];
+      ["주차", "기간 (일~토)", "근무일", "정규", "조기잔업", "기본잔업", "추가잔업", "총잔업", "근로합계", state.limit + "h까지 남음", "상태"]];
     for (var ws = weekStart(R.first); ws <= weekStart(R.next - 1); ws += 7) {
-      var reg = 0, bot = 0, eot = 0, cnt = 0;
-      all.forEach(function (x) { if (x.n >= ws && x.n <= ws + 6) { reg += x.r.reg; bot += x.r.bot; eot += x.r.eot; cnt++; } });
-      var tot = reg + bot + eot, left = LIM() - tot;
-      w.push([wk(ws), label(ws) + "~" + label(ws + 6), cnt, tcell(reg), tcell(bot), tcell(eot), tcell(bot + eot), tcell(tot),
+      var reg = 0, ear = 0, bot = 0, eot = 0, cnt = 0;
+      all.forEach(function (x) { if (x.n >= ws && x.n <= ws + 6) { reg += x.r.reg; ear += x.r.ear; bot += x.r.bot; eot += x.r.eot; cnt++; } });
+      var tot = reg + ear + bot + eot, left = LIM() - tot;
+      w.push([wk(ws), label(ws) + "~" + label(ws + 6), cnt, tcell(reg), tcell(ear), tcell(bot), tcell(eot), tcell(ear + bot + eot), tcell(tot),
         left >= 0 ? tcell(left) : "초과 " + hm(-left), left < 0 ? "⚠ " + state.limit + "시간 초과" : tot > LEGAL ? "법정 52h 초과" : left < 240 ? "주의" : "정상"]);
     }
-    var tr = 0, tb = 0, te = 0;
-    inMonth.forEach(function (x) { tr += x.r.reg; tb += x.r.bot; te += x.r.eot; });
+    var tr = 0, ta = 0, tb = 0, te = 0;
+    inMonth.forEach(function (x) { tr += x.r.reg; ta += x.r.ear; tb += x.r.bot; te += x.r.eot; });
     w.push([]);
-    w.push([R.m + "월 합계", "(이 달 날짜만)", inMonth.length, tcell(tr), tcell(tb), tcell(te), tcell(tb + te), tcell(tr + tb + te)]);
+    w.push([R.m + "월 합계", "(이 달 날짜만)", inMonth.length, tcell(tr), tcell(ta), tcell(tb), tcell(te), tcell(ta + tb + te), tcell(tr + ta + tb + te)]);
     w.push([]);
     w.push(["※ 주별 행은 달에 걸친 주의 앞뒤 날짜까지 합산합니다. 근로합계 = 정규 + 잔업(휴게 제외). 주차는 엑셀 WEEKNUM과 같은 방식입니다."]);
     var s1 = X.utils.aoa_to_sheet(w);
-    s1["!cols"] = [{ wch: 7 }, { wch: 20 }, { wch: 7 }, { wch: 8 }, { wch: 9 }, { wch: 9 }, { wch: 8 }, { wch: 9 }, { wch: 12 }, { wch: 13 }];
-    s1["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 9 } }];
+    s1["!cols"] = [{ wch: 7 }, { wch: 20 }, { wch: 7 }, { wch: 8 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 8 }, { wch: 9 }, { wch: 12 }, { wch: 13 }];
+    s1["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }];
 
-    var d = [["날짜", "요일", "주차", "근무", "출근", "퇴근", "정규", "기본잔업", "추가잔업", "총잔업", "다음출근가능", "확인"]];
+    var d = [["날짜", "요일", "주차", "근무", "출근", "조기출근", "퇴근", "정규", "조기잔업", "기본잔업", "추가잔업", "총잔업", "다음출근가능", "확인"]];
     inMonth.forEach(function (x) {
-      d.push([x.date, WD[weekday(x.n)], wk(x.n), SHIFTS[x.shift].name, x.tin, x.tout + (x.r.cout >= 1440 ? "(+1)" : ""),
-        tcell(x.r.reg), tcell(x.r.bot), tcell(x.r.eot), tcell(x.r.ot), label(x.n + Math.floor(x.r.next / 1440)) + " " + clock(x.r.next), flags[x.date] || ""]);
+      d.push([x.date, WD[weekday(x.n)], wk(x.n), SHIFTS[x.shift].name, x.tin, x.early ? "Y" : "", x.tout + (x.r.cout >= 1440 ? "(+1)" : ""),
+        tcell(x.r.reg), tcell(x.r.ear), tcell(x.r.bot), tcell(x.r.eot), tcell(x.r.ot), label(x.n + Math.floor(x.r.next / 1440)) + " " + clock(x.r.next), flags[x.date] || ""]);
     });
     var s2 = X.utils.aoa_to_sheet(d);
-    s2["!cols"] = [{ wch: 11 }, { wch: 5 }, { wch: 7 }, { wch: 5 }, { wch: 6 }, { wch: 10 }, { wch: 7 }, { wch: 9 }, { wch: 9 }, { wch: 7 }, { wch: 15 }, { wch: 34 }];
+    s2["!cols"] = [{ wch: 11 }, { wch: 5 }, { wch: 7 }, { wch: 5 }, { wch: 6 }, { wch: 8 }, { wch: 10 }, { wch: 7 }, { wch: 9 }, { wch: 7 }, { wch: 9 }, { wch: 9 }, { wch: 7 }, { wch: 15 }, { wch: 34 }];
     var wb = X.utils.book_new();
     X.utils.book_append_sheet(wb, s1, "주별 요약");
     X.utils.book_append_sheet(wb, s2, "일별 기록");
@@ -962,12 +990,12 @@ body{margin:0}
   });
 
   /* ---------- CSV ---------- */
-  var HEAD = ["날짜", "요일", "주차", "근무", "출근", "퇴근", "정규", "기본잔업", "추가잔업", "총잔업", "확인"];
+  var HEAD = ["날짜", "요일", "주차", "근무", "출근", "조기출근", "퇴근", "정규", "조기잔업", "기본잔업", "추가잔업", "총잔업", "확인"];
   $("b-export").addEventListener("click", function () {
     var R = monthRange(), all = enriched(), flags = flagsFor(all), prefix = R.y + "-" + pad(R.m) + "-";
     var lines = [HEAD.join(",")];
     all.filter(function (x) { return x.date.indexOf(prefix) === 0; }).forEach(function (x) {
-      lines.push([x.date, WD[weekday(x.n)], wk(x.n), SHIFTS[x.shift].name, x.tin, x.tout, hm(x.r.reg), hm(x.r.bot), hm(x.r.eot), hm(x.r.ot),
+      lines.push([x.date, WD[weekday(x.n)], wk(x.n), SHIFTS[x.shift].name, x.tin, x.early ? "Y" : "", x.tout, hm(x.r.reg), hm(x.r.ear), hm(x.r.bot), hm(x.r.eot), hm(x.r.ot),
         (flags[x.date] || "").replace(/,/g, " ")].join(","));
     });
     if (lines.length < 2) { toast("이 달에 백업할 기록이 없습니다"); return; }
@@ -994,13 +1022,13 @@ body{margin:0}
       var lines = String(rd.result).replace(/^\uFEFF/, "").split(/\r?\n/).filter(function (l) { return l.trim(); });
       if (lines.length < 2) { toast("가져올 기록이 없습니다"); return; }
       var h = lines[0].split(",").map(function (s) { return s.trim(); });
-      var iD = h.indexOf("날짜"), iS = h.indexOf("근무"), iI = h.indexOf("출근"), iO = h.indexOf("퇴근");
+      var iD = h.indexOf("날짜"), iS = h.indexOf("근무"), iI = h.indexOf("출근"), iO = h.indexOf("퇴근"), iE = h.indexOf("조기출근");
       if (iD < 0 || iS < 0 || iI < 0 || iO < 0) { toast("날짜·근무·출근·퇴근 열이 있는 CSV가 필요합니다"); return; }
       var recs = [];
       lines.slice(1).forEach(function (l) {
         var c = l.split(",").map(function (s) { return s.trim(); });
         var sh = c[iS] === "주간" ? "day" : c[iS] === "야간" ? "night" : null;
-        var rec = { date: c[iD], shift: sh, tin: c[iI], tout: (c[iO] || "").replace("(+1)", ""), updatedAt: new Date().toISOString() };
+        var rec = { date: c[iD], shift: sh, tin: c[iI], tout: (c[iO] || "").replace("(+1)", ""), early: iE >= 0 && c[iE] === "Y", updatedAt: new Date().toISOString() };
         if (validRec(rec)) recs.push(rec);
       });
       if (!recs.length) { toast("형식이 맞는 기록이 없습니다"); return; }
