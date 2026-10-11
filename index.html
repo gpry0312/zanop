@@ -186,6 +186,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .rec .flag { grid-column: 1 / -1; font-size: 12px; color: var(--warn); font-weight: 600; }
 .empty { background: var(--card); border: 1px dashed var(--line); border-radius: 12px; padding: 18px; text-align: center; color: var(--muted); font-size: 13px; }
 
+.btn-xlsx { flex: none; width: 100%; font-size: 15px; padding: 12px 0; }
 .io { display: flex; gap: 8px; flex-wrap: wrap; }
 .io .btn-ghost { flex: 1; }
 details { font-size: 13px; color: var(--muted); }
@@ -304,6 +305,7 @@ body{margin:0}
     <div class="sec-title">일별 기록</div>
     <div class="recs" id="recs"></div>
 
+    <button type="button" class="btn-primary btn-xlsx" id="b-xlsx">이 달 엑셀로 보기 (주별 요약)</button>
     <div class="io">
       <button type="button" class="btn-ghost" id="b-export">이 달 CSV 내보내기</button>
       <button type="button" class="btn-ghost" id="b-import">CSV 가져오기</button>
@@ -697,6 +699,105 @@ body{margin:0}
 
   /* ---------- CSV ---------- */
   var HEAD = ["날짜", "요일", "근무", "출근", "퇴근", "인정시작", "인정종료", "휴게", "정규", "기본잔업", "추가잔업", "총잔업", "다음출근가능", "확인"];
+  /* ---------- Excel (.xlsx) ---------- */
+  var XLSX_URL = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+  function loadXLSX() {
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    return new Promise(function (ok, fail) {
+      var sc = document.createElement("script");
+      sc.src = XLSX_URL;
+      sc.onload = function () { window.XLSX ? ok(window.XLSX) : fail(); };
+      sc.onerror = fail;
+      document.head.appendChild(sc);
+    });
+  }
+  function tcell(m) { return { t: "n", v: Math.round(m) / 1440, z: "[h]:mm" }; }
+
+  function buildWorkbook(X) {
+    var y = state.ym.y, m = state.ym.m;
+    var first = dayNum(y + "-" + pad(m) + "-01");
+    var nextFirst = m === 12 ? dayNum((y + 1) + "-01-01") : dayNum(y + "-" + pad(m + 1) + "-01");
+    var all = store.recs.map(function (r) {
+      return { date: r.date, shift: r.shift, tin: r.tin, tout: r.tout, n: dayNum(r.date), r: compute(r.shift, r.tin, r.tout, state.unit) };
+    }).filter(function (x) { return x.r; }).sort(function (a, b) { return a.n - b.n; });
+    var flags = flagsFor(all);
+    var inMonth = all.filter(function (x) { return x.n >= first && x.n < nextFirst; });
+
+    // sheet 1: weekly summary
+    var w = [[y + "년 " + m + "월 주별 근무 요약 (주 52시간 기준, 월~일)"], [],
+      ["주 (월~일)", "근무일", "정규", "기본잔업", "추가잔업", "총잔업", "근로합계", "52h까지 남음", "상태"]];
+    var tReg = 0, tBot = 0, tEot = 0, tDays = 0;
+    for (var ws = first - ((weekday(first) + 6) % 7); ws < nextFirst; ws += 7) {
+      var we = ws + 6, reg = 0, bot = 0, eot = 0, cnt = 0;
+      all.forEach(function (x) { if (x.n >= ws && x.n <= we) { reg += x.r.reg; bot += x.r.bot; eot += x.r.eot; cnt++; } });
+      var tot = reg + bot + eot, left = WEEK_LIMIT - tot;
+      w.push([label(ws) + "~" + label(we), cnt, tcell(reg), tcell(bot), tcell(eot), tcell(bot + eot), tcell(tot),
+        left >= 0 ? tcell(left) : "초과 " + hm(-left), left < 0 ? "⚠ 52시간 초과" : left < 240 ? "주의" : "정상"]);
+    }
+    inMonth.forEach(function (x) { tReg += x.r.reg; tBot += x.r.bot; tEot += x.r.eot; tDays++; });
+    w.push([]);
+    w.push([m + "월 합계 (이 달 날짜만)", tDays, tcell(tReg), tcell(tBot), tcell(tEot), tcell(tBot + tEot), tcell(tReg + tBot + tEot)]);
+    w.push([]);
+    w.push(["※ 주별 행은 달이 걸친 주의 앞뒤 날짜까지 합산합니다. 근로합계 = 정규 + 잔업(휴게 제외)."]);
+    var s1 = X.utils.aoa_to_sheet(w);
+    s1["!cols"] = [{ wch: 22 }, { wch: 7 }, { wch: 8 }, { wch: 9 }, { wch: 9 }, { wch: 8 }, { wch: 9 }, { wch: 12 }, { wch: 13 }];
+    s1["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }];
+
+    // sheet 2: daily records
+    var d = [["날짜", "요일", "근무", "출근", "퇴근", "정규", "기본잔업", "추가잔업", "총잔업", "다음출근가능", "확인"]];
+    inMonth.forEach(function (x) {
+      var nx = x.n + Math.floor(x.r.next / 1440);
+      d.push([x.date, WD[weekday(x.n)], SHIFTS[x.shift].name, x.tin, x.tout + (x.r.cout >= 1440 ? "(+1)" : ""),
+        tcell(x.r.reg), tcell(x.r.bot), tcell(x.r.eot), tcell(x.r.ot), label(nx) + " " + clock(x.r.next), flags[x.date] || ""]);
+    });
+    var s2 = X.utils.aoa_to_sheet(d);
+    s2["!cols"] = [{ wch: 11 }, { wch: 5 }, { wch: 5 }, { wch: 6 }, { wch: 10 }, { wch: 7 }, { wch: 9 }, { wch: 9 }, { wch: 7 }, { wch: 15 }, { wch: 34 }];
+
+    var wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, s1, "주별 요약");
+    X.utils.book_append_sheet(wb, s2, "일별 기록");
+    return { wb: wb, count: inMonth.length, name: "근무기록_" + y + "-" + pad(m) + ".xlsx" };
+  }
+
+  var XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  $("b-xlsx").addEventListener("click", function () {
+    var btn = this;
+    if (!store.recs.length) { toast("저장된 기록이 없습니다"); return; }
+    btn.disabled = true;
+    loadXLSX().then(function (X) {
+      var o = buildWorkbook(X);
+      if (!o.count) { toast("이 달에 저장된 기록이 없습니다"); return; }
+      var buf = X.write(o.wb, { bookType: "xlsx", type: "array" });
+      var blob = new Blob([buf], { type: XLSX_MIME });
+
+      if (window.claude && typeof window.claude.use === "function") {
+        return window.claude.use("downloads").then(function (dl) {
+          if (!dl) { toast("이 화면에서는 파일을 받을 수 없습니다"); return; }
+          return dl.save({ filename: o.name, data: blob }).then(function (res) {
+            if (res && res.status === "saved") toast(o.name + " 파일을 저장했습니다");
+          }, function (e) { if (e && e.code !== "declined") toast("파일을 저장하지 못했습니다"); });
+        });
+      }
+      var file = null;
+      try { file = new File([blob], o.name, { type: XLSX_MIME }); } catch (e) {}
+      if (isMobile && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        return navigator.share({ files: [file], title: o.name }).catch(function (e) {
+          if (!e || e.name !== "AbortError") toast("공유 화면을 열지 못했습니다");
+        });
+      }
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = o.name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+      toast(o.name + " 파일을 내려받았습니다");
+    }, function () {
+      toast("엑셀 기능을 불러오지 못했습니다. 인터넷 연결을 확인하세요.");
+    }).then(function () { btn.disabled = false; }, function () { btn.disabled = false; });
+  });
+
   function buildCsv() {
     var y = state.ym.y, m = state.ym.m;
     var all = store.recs.map(function (r) { return { date: r.date, shift: r.shift, tin: r.tin, tout: r.tout, n: dayNum(r.date), r: compute(r.shift, r.tin, r.tout, state.unit) }; })
@@ -770,6 +871,8 @@ body{margin:0}
   document.querySelectorAll(".units button").forEach(function (x) { x.setAttribute("aria-pressed", +x.dataset.u === state.unit); });
   setShift(state.shift);
   renderLedger();
+  // 엑셀 기능 미리 불러오기 (아이폰 공유 화면이 버튼 터치 직후에 열리도록)
+  setTimeout(function () { loadXLSX().catch(function () {}); }, 1200);
 })();
 </script>
 
