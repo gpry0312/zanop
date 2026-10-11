@@ -29,6 +29,7 @@
   --night-soft: #E4E7F4;
   --warn: #B3261E;
   --warn-soft: #FBE9E7;
+  --caution: #A86A12;
   --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
@@ -36,13 +37,13 @@
   :root:not([data-theme="light"]) {
     --bg: #121615; --card: #1B201F; --ink: #E8ECEA; --muted: #9AA4A0; --line: #2E3533;
     --accent: #6CC2AE; --accent-soft: #1E332E; --on-accent: #0E1A17; --night: #9DAAF0; --night-soft: #252A44;
-    --warn: #FF8A80; --warn-soft: #3A1E1C; color-scheme: dark;
+    --warn: #FF8A80; --warn-soft: #3A1E1C; --caution: #F2B45A; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #121615; --card: #1B201F; --ink: #E8ECEA; --muted: #9AA4A0; --line: #2E3533;
   --accent: #6CC2AE; --accent-soft: #1E332E; --on-accent: #0E1A17; --night: #9DAAF0; --night-soft: #252A44;
-  --warn: #FF8A80; --warn-soft: #3A1E1C; color-scheme: dark;
+  --warn: #FF8A80; --warn-soft: #3A1E1C; --caution: #F2B45A; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body {
@@ -95,6 +96,32 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .next .v { font-family: var(--f-num); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .next .v small { font-family: var(--f-body); font-size: 13px; font-weight: 600; margin-right: 6px; }
 .warn { padding: 10px 16px; background: var(--warn-soft); color: var(--warn); font-size: 13px; font-weight: 600; }
+
+/* this-week 52h gauge */
+.week52 { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.w52-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.w52-head .t { font-size: 13px; font-weight: 600; }
+.w52-head .r { font-family: var(--f-num); font-size: 12px; color: var(--muted); }
+.w52-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.w52-nums div { display: flex; flex-direction: column; min-width: 0; }
+.w52-nums b { font-size: 12px; color: var(--muted); font-weight: 500; }
+.w52-nums span { font-family: var(--f-num); font-size: 26px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.w52-nums span small { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-weight: 500; }
+.w52-nums .left span { color: var(--state); }
+.gauge { position: relative; height: 14px; border-radius: 7px; background: var(--accent-soft); overflow: visible; margin-top: 2px; }
+.gauge .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 7px; background: var(--state); max-width: 100%; }
+.gauge .tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: .35; }
+.gauge .tick.lim { opacity: .9; background: var(--warn); }
+.gauge-lab { position: relative; height: 14px; font-family: var(--f-num); font-size: 10px; color: var(--muted); }
+.gauge-lab span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.w52-note { font-size: 13px; color: var(--ink); background: var(--bg); border-radius: 8px; padding: 8px 10px; }
+.w52-note strong { color: var(--state); }
+.week52 { --state: var(--accent); }
+.week52.caution { --state: var(--caution); }
+.week52.over { --state: var(--warn); }
+.wbar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--accent-soft); position: relative; }
+.wbar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--accent); }
+.week.over .wbar i { background: var(--warn); }
 
 .savebar { display: flex; gap: 8px; }
 .btn-primary {
@@ -222,6 +249,22 @@ body{margin:0}
       <span class="v" id="r-next"><small></small>08:00</span>
     </div>
     <div class="warn" id="r-warn" hidden></div>
+  </section>
+
+  <section class="week52" id="w52" aria-live="polite">
+    <div class="w52-head">
+      <span class="t">이번 주 근로시간 (주 52시간 기준)</span>
+      <span class="r" id="w52-range">10/5(월)–10/11(일)</span>
+    </div>
+    <div class="w52-nums">
+      <div><b>근로 합계</b><span id="w52-total">0:00<small> / 52:00</small></span></div>
+      <div class="left"><b id="w52-left-lab">남은 시간</b><span id="w52-left">52:00</span></div>
+    </div>
+    <div>
+      <div class="gauge" id="w52-gauge"><div class="fill" id="w52-fill" style="width:0%"></div></div>
+      <div class="gauge-lab" id="w52-lab"></div>
+    </div>
+    <div class="w52-note" id="w52-note"></div>
   </section>
 
   <div class="savebar">
@@ -384,7 +427,58 @@ body{margin:0}
         label(d0 + Math.floor(r.next / 1440)) + " " + clock(r.next) + "입니다.";
       w.hidden = false;
     } else { w.hidden = true; }
+    renderWeek52(d0, r);
     savePrefs();
+  }
+
+  /* ---------- this week vs 52h ---------- */
+  var DAY_STD = REGULAR + 60; // 정시 근무 1일 = 정규 8h + 기본 잔업 1h
+  function renderWeek52(d0, r) {
+    var ws = d0 - ((weekday(d0) + 6) % 7), we = ws + 6;
+    $("w52-range").textContent = label(ws) + "–" + label(we);
+    var total = 0, ot = 0, days = 0, have = {};
+    store.recs.forEach(function (x) {
+      var n = dayNum(x.date);
+      if (n < ws || n > we || n === d0) return;
+      var c = compute(x.shift, x.tin, x.tout, state.unit); if (!c) return;
+      total += c.reg + c.ot; ot += c.ot; days++; have[n] = true;
+    });
+    if (r) { total += r.reg + r.ot; ot += r.ot; days++; have[d0] = true; }
+
+    // 입력한 날 이후, 기록 없는 평일(월~금)
+    var future = 0;
+    for (var n = d0 + 1; n <= we; n++) { var wd = weekday(n); if (wd >= 1 && wd <= 5 && !have[n]) future++; }
+
+    var left = WEEK_LIMIT - total;
+    var box = $("w52");
+    box.classList.toggle("over", left < 0);
+    box.classList.toggle("caution", left >= 0 && left < 4 * 60);
+    $("w52-total").innerHTML = hm(total) + "<small> / 52:00</small>";
+    $("w52-left-lab").textContent = left < 0 ? "초과 시간" : "남은 시간";
+    $("w52-left").textContent = (left < 0 ? "+" : "") + hm(Math.abs(left));
+
+    var scale = Math.max(60 * 60, total + 60);
+    $("w52-fill").style.width = (100 * total / scale) + "%";
+    var g = $("w52-gauge"), lab = $("w52-lab");
+    g.querySelectorAll(".tick").forEach(function (t) { t.remove(); });
+    lab.innerHTML = "";
+    [[40 * 60, "40h", ""], [WEEK_LIMIT, "52h", " lim"]].forEach(function (m) {
+      var p = 100 * m[0] / scale;
+      var t = document.createElement("div"); t.className = "tick" + m[2]; t.style.left = "calc(" + p + "% - 1px)"; g.appendChild(t);
+      var s = document.createElement("span"); s.style.left = p + "%"; s.textContent = m[1]; lab.appendChild(s);
+    });
+
+    var note = $("w52-note"), extra = left - future * DAY_STD;
+    var head = "이 입력 포함 " + days + "일 · 잔업 " + hm(ot) + ". ";
+    if (left < 0) {
+      note.innerHTML = head + "주 52시간을 <strong>" + hm(-left) + " 초과</strong>합니다. 회사 승인 절차를 확인하세요.";
+    } else if (future === 0) {
+      note.innerHTML = head + "이번 주 남은 근로 가능 시간은 <strong>" + hm(left) + "</strong>입니다.";
+    } else if (extra >= 0) {
+      note.innerHTML = head + "남은 평일 " + future + "일을 정시 근무(하루 9시간)하면, 추가 잔업은 <strong>" + hm(extra) + "</strong>까지 가능합니다.";
+    } else {
+      note.innerHTML = head + "남은 평일 " + future + "일을 정시로만 일해도 <strong>" + hm(-extra) + " 초과</strong>합니다.";
+    }
   }
 
   function setShift(sh) {
@@ -557,7 +651,8 @@ body{margin:0}
       row.className = "week" + (wTot > WEEK_LIMIT ? " over" : "");
       row.innerHTML = '<span class="d">' + label(ws) + "–" + label(we) + "<em>" + list.length + "일</em></span>" +
         '<span class="n"><small>잔업</small>' + hm(wOt) + "</span>" +
-        '<span class="n tot"><small>근로</small>' + hm(wTot) + "</span>";
+        '<span class="n tot"><small>근로</small>' + hm(wTot) + "</span>" +
+        '<div class="wbar"><i style="width:' + Math.min(100, 100 * wTot / WEEK_LIMIT) + '%"></i></div>';
       wk.appendChild(row);
       any = true;
     }
