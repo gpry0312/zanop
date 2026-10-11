@@ -144,6 +144,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .wlog-foot b.ot { color: var(--accent); }
 .early-tg { justify-self: end; border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; position: relative; z-index: 2; }
 .early-tg[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.savebar { display: flex; gap: 8px; }
+.savebar .btn-primary { flex: 1; }
+.savebar .btn-del { flex: none; padding: 0 16px; font-size: 14px; }
 .foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
 .units { display: flex; gap: 4px; align-items: center; }
 .units button { font-family: var(--f-num); font-size: 11.5px; border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
@@ -239,6 +242,7 @@ details ol { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction:
 .pw-help { margin: 0; font-size: 13px; color: var(--muted); }
 #pw-in { width: 100%; font-family: var(--f-num); font-size: 22px; letter-spacing: 0.3em; text-align: center; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
 .pw-msg { min-height: 18px; font-size: 13px; color: var(--warn); font-weight: 600; text-align: center; }
+#bk-text { width: 100%; font-family: var(--f-num); font-size: 11px; line-height: 1.4; border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--bg); color: var(--ink); resize: vertical; }
 .btn-del.armed { border-color: var(--warn); color: var(--warn); }
 
 .toast { position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; max-width: calc(100% - 32px); text-align: center; z-index: 30; }
@@ -281,7 +285,7 @@ body{margin:0}
       </div>
       <div class="field">
         <label for="t-out">퇴근</label>
-        <div class="pick"><span class="pv" id="pv-out">21:00</span><span class="caret" aria-hidden="true">▾</span><input type="time" id="t-out" value="21:00" step="60"></div>
+        <div class="pick"><span class="pv" id="pv-out">19:00</span><span class="caret" aria-hidden="true">▾</span><input type="time" id="t-out" value="19:00" step="60"></div>
         <span class="hint" id="h-out"></span>
       </div>
     </div>
@@ -320,7 +324,10 @@ body{margin:0}
       </div>
     </section>
 
-    <button type="button" class="btn-primary" id="b-save">저장</button>
+    <div class="savebar">
+      <button type="button" class="btn-primary" id="b-save">저장</button>
+      <button type="button" class="btn-ghost btn-del" id="b-del" hidden>삭제</button>
+    </div>
 
     <section class="card wlog" aria-live="polite">
       <div class="wlog-head"><span id="wl-title">wk-42 기록</span><span id="wl-range" class="num">10/11–10/17</span></div>
@@ -355,7 +362,7 @@ body{margin:0}
         <li>기본시간 안의 근무는 정규 8시간을 먼저 채우고, 남는 1시간이 기본 잔업입니다.</li>
         <li>기본 종료(주간 18:00, 야간 04:00) 이후는 추가 잔업이며, 인정 단위로 내림합니다.</li>
         <li>다음 출근은 실제 퇴근 시각에서 11시간 뒤부터 가능합니다.</li>
-        <li>날짜는 출근한 날 기준입니다. 같은 날짜로 다시 저장하면 수정됩니다.</li>
+        <li>날짜는 출근한 날 기준입니다. 같은 날짜로 다시 저장하면 수정됩니다. 기록이 없는 날은 기본 시각(주간 07:00~19:00, 야간 17:00~05:00)이 먼저 채워집니다.</li>
         <li>주는 일요일~토요일이며, 주차(wk)는 엑셀 WEEKNUM과 같은 방식입니다. 근로(정규+잔업)가 선택한 주 한도(52h 또는 58h)를 넘으면 빨갛게 표시합니다. 58h를 고르면 법정 52h 위치도 옅은 선으로 함께 보여 줍니다.</li>
       </ol>
     </details>
@@ -398,9 +405,10 @@ body{margin:0}
     </div>
 
     <div class="acts2">
-      <button type="button" class="btn-ghost" id="b-export">CSV 백업</button>
+      <button type="button" class="btn-ghost" id="b-export">전체 CSV 백업</button>
       <button type="button" class="btn-ghost" id="b-import">CSV 가져오기</button>
-      <input type="file" id="f-import" accept=".csv,text/csv" hidden>
+      <button type="button" class="btn-ghost" id="b-paste" style="flex:none">붙여넣기</button>
+      <input type="file" id="f-import" hidden>
     </div>
     <div class="store-note" id="store-note">기록을 불러오는 중입니다.</div>
   </section>
@@ -426,6 +434,16 @@ body{margin:0}
       <button type="submit" class="btn-primary" style="padding:8px 0;font-size:14px">확인</button>
     </div>
   </form>
+</div>
+<div class="sheet" id="bk" role="dialog" aria-modal="true" aria-labelledby="bk-title" hidden>
+  <div class="sheet-head"><h3 id="bk-title" style="font-family:var(--f-body)">백업 내용</h3></div>
+  <p class="pw-help" id="bk-help">아래 글을 복사해서 메모 앱 등에 붙여 두세요. 복원할 때는 같은 글을 붙여 넣고 가져오기를 누르면 됩니다.</p>
+  <textarea id="bk-text" rows="7" spellcheck="false" aria-label="백업 내용"></textarea>
+  <div class="sheet-btns">
+    <button type="button" class="btn-ghost" id="bk-close">닫기</button>
+    <button type="button" class="btn-ghost" id="bk-copy">복사</button>
+    <button type="button" class="btn-primary" id="bk-import" style="padding:8px 0;font-size:14px">붙여넣은 글 가져오기</button>
+  </div>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -512,8 +530,6 @@ body{margin:0}
     var saved = JSON.parse(localStorage.getItem("ot-calc") || "{}");
     if (SHIFTS[saved.shift]) state.shift = saved.shift;
     if ([1, 10, 30].indexOf(saved.unit) >= 0) state.unit = saved.unit;
-    if (toMin(saved.tin) !== null) inEl.value = saved.tin;
-    if (toMin(saved.tout) !== null) outEl.value = saved.tout;
     if (saved.tab === "board") state.tab = "board";
     if (saved.limit === 52 || saved.limit === 58) state.limit = saved.limit;
     if (saved.theme === "light" || saved.theme === "dark") state.theme = saved.theme;
@@ -556,6 +572,9 @@ body{margin:0}
 
     var exists = !!findRec(formDate());
     $("b-save").textContent = label(d0) + (exists ? " 수정 저장" : " 저장");
+    var bd = $("b-del");
+    if (bd.dataset.date !== formDate()) { bd.classList.remove("armed"); bd.textContent = "삭제"; bd.dataset.date = formDate(); }
+    bd.hidden = !exists;
     var r = compute(state.shift, inEl.value, outEl.value, state.unit, state.early);
     $("b-save").disabled = !r || store.mode === "loading";
     if (!r) return;
@@ -654,8 +673,11 @@ body{margin:0}
     $("b-night").setAttribute("aria-pressed", sh === "night");
     calc();
   }
-  $("b-day").addEventListener("click", function () { if (state.shift !== "day") { inEl.value = "07:30"; outEl.value = "18:00"; } setShift("day"); });
-  $("b-night").addEventListener("click", function () { if (state.shift !== "night") { inEl.value = "17:30"; outEl.value = "04:00"; } setShift("night"); });
+  // 근무별 기본 출/퇴근 시각
+  var DEF_TIMES = { day: ["07:00", "19:00"], night: ["17:00", "05:00"] };
+  function setDefaults(sh) { inEl.value = DEF_TIMES[sh][0]; outEl.value = DEF_TIMES[sh][1]; }
+  $("b-day").addEventListener("click", function () { if (state.shift !== "day") setDefaults("day"); setShift("day"); });
+  $("b-night").addEventListener("click", function () { if (state.shift !== "night") setDefaults("night"); setShift("night"); });
   document.querySelectorAll(".units button[data-u]").forEach(function (b) {
     b.addEventListener("click", function () {
       state.unit = +b.dataset.u;
@@ -667,7 +689,20 @@ body{margin:0}
   var earlyTouched = false, earlySynced = false;
   $("b-early").addEventListener("click", function () { earlyTouched = true; state.early = !state.early; calc(); });
   // 날짜를 바꾸면: 그 날 저장 기록이 있으면 기록의 조기출근 상태, 없으면 꺼짐
-  function syncEarlyForDate() { earlyTouched = true; var rec = findRec(formDate()); state.early = !!(rec && rec.early); }
+  // 날짜를 바꾸면: 저장된 기록이 있으면 그 값을, 없으면 지금 근무의 기본 시각을 보여 줌 (조기출근은 꺼짐)
+  function applyDate() {
+    var rec = findRec(formDate());
+    if (rec) { state.shift = rec.shift; inEl.value = rec.tin; outEl.value = rec.tout; state.early = !!rec.early; }
+    else { setDefaults(state.shift); state.early = false; }
+    $("b-day").setAttribute("aria-pressed", state.shift === "day");
+    $("b-night").setAttribute("aria-pressed", state.shift === "night");
+  }
+  var lastDate = null;
+  function syncEarlyForDate() {
+    earlyTouched = true;
+    if (formDate() === lastDate) return;
+    lastDate = formDate(); applyDate();
+  }
   dateEl.addEventListener("input", syncEarlyForDate); dateEl.addEventListener("change", syncEarlyForDate);
   [dateEl, inEl, outEl].forEach(function (el) {
     el.addEventListener("input", calc); el.addEventListener("change", calc);
@@ -799,6 +834,21 @@ body{margin:0}
     }).then(function () { btn.disabled = false; renderAll(); });
   });
 
+  /* 입력 탭에서 그 날 기록 삭제 (두 번 눌러 확인) */
+  var delArmT;
+  $("b-del").addEventListener("click", function () {
+    var bd = this, date = formDate();
+    if (!bd.classList.contains("armed")) {
+      bd.classList.add("armed"); bd.textContent = "삭제 확인";
+      clearTimeout(delArmT);
+      delArmT = setTimeout(function () { bd.classList.remove("armed"); bd.textContent = "삭제"; }, 3000);
+      return;
+    }
+    clearTimeout(delArmT); bd.classList.remove("armed"); bd.textContent = "삭제";
+    deleteRec(date).then(function () { state.early = false; toast(label(dayNum(date)) + " 기록을 삭제했습니다"); renderAll(); },
+      function () { toast("삭제하지 못했습니다. 잠시 후 다시 눌러 주세요."); });
+  });
+
   /* ---------- board ---------- */
   var selDate = null;
   function renderBoard() {
@@ -858,7 +908,7 @@ body{margin:0}
 
   /* ---------- day sheet ---------- */
   function closeSheet() { $("sheet").hidden = true; $("scrim").hidden = true; selDate = null; renderBoard(); }
-  $("scrim").addEventListener("click", function () { if (!$("pw").hidden) closePw(); else closeSheet(); });
+  $("scrim").addEventListener("click", function () { if (!$("pw").hidden) closePw(); else if (!$("bk").hidden) closeBk(); else closeSheet(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("sheet").hidden) closeSheet(); });
 
   function openSheet(ds) {
@@ -908,7 +958,7 @@ body{margin:0}
   }
 
   function renderAll() {
-    if (!earlySynced && store.mode !== "loading") { earlySynced = true; if (!earlyTouched) { var rec = findRec(formDate()); state.early = !!(rec && rec.early); } }
+    if (!earlySynced && store.mode !== "loading") { earlySynced = true; if (!earlyTouched) { lastDate = formDate(); applyDate(); } }
     calc(); renderBoard();
   }
 
@@ -966,23 +1016,46 @@ body{margin:0}
     }, function () { toast("엑셀 기능을 불러오지 못했습니다. 인터넷 연결을 확인하세요."); return null; });
   }
   var inViewer = false;
+  var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  /* 파일 내보내기: Claude 화면 → 다운로드 기능, 아이폰 → 공유 화면(파일에 저장), 그 외 → 바로 다운로드 */
+  function deliver(name, blob, mime, okMsg) {
+    if (inViewer) {
+      return window.claude.use("downloads").then(function (dl) {
+        if (!dl) { toast("이 화면에서는 파일을 받을 수 없습니다"); return; }
+        return dl.save({ filename: name, data: blob }).then(function (res) {
+          if (res && res.status === "saved") toast(name + " 저장 완료");
+        }, function (e) { if (e && e.code !== "declined") toast("파일을 저장하지 못했습니다"); });
+      });
+    }
+    var file = null;
+    try { file = new File([blob], name, { type: mime }); } catch (e) {}
+    if (isIOS && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      toast("공유 화면에서 '파일에 저장'을 고르세요");
+      return navigator.share({ files: [file], title: name }).then(function () {}, function (e) {
+        if (e && e.name === "AbortError") return;
+        return blob.text().then(function (t) { if (mime.indexOf("csv") >= 0) showBackupText(t); else toast("공유 화면을 열지 못했습니다"); });
+      });
+    }
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    toast(okMsg);
+    return Promise.resolve();
+  }
+  /* 공유가 안 되는 기기용: 백업 내용을 글자로 보여 주고 복사 */
+  function showBackupText(t) {
+    $("bk-title").textContent = "백업 내용";
+    $("bk-help").textContent = "아래 글을 복사해서 메모 앱 등에 붙여 두세요. 복원할 때는 [붙여넣기]로 같은 글을 넣으면 됩니다.";
+    $("bk-copy").hidden = false;
+    $("bk-text").value = t.replace(/^\uFEFF/, "");
+    $("scrim").hidden = false; $("bk").hidden = false;
+  }
   $("b-xlsx").addEventListener("click", function () {
     var btn = this; btn.disabled = true;
     makeXlsx().then(function (f) {
       if (!f) return;
-      if (inViewer) {
-        return window.claude.use("downloads").then(function (dl) {
-          if (!dl) { toast("이 화면에서는 파일을 받을 수 없습니다"); return; }
-          return dl.save({ filename: f.name, data: f.blob }).then(function (res) {
-            if (res && res.status === "saved") toast(f.name + " 저장 완료");
-          }, function (e) { if (e && e.code !== "declined") toast("파일을 저장하지 못했습니다"); });
-        });
-      }
-      var a = document.createElement("a");
-      a.href = URL.createObjectURL(f.blob); a.download = f.name;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
-      toast(f.name + " 저장 · 파일 앱 > 다운로드에서 확인");
+      return deliver(f.name, f.blob, XLSX_MIME, f.name + " 저장 · 파일 앱 > 다운로드에서 확인");
     }).then(function () { btn.disabled = false; }, function () { btn.disabled = false; });
   });
   $("b-share").addEventListener("click", function () {
@@ -999,34 +1072,28 @@ body{margin:0}
   /* ---------- CSV ---------- */
   var HEAD = ["날짜", "요일", "주차", "근무", "출근", "조기출근", "퇴근", "정규", "조기잔업", "기본잔업", "추가잔업", "총잔업", "확인"];
   $("b-export").addEventListener("click", function () {
-    var R = monthRange(), all = enriched(), flags = flagsFor(all), prefix = R.y + "-" + pad(R.m) + "-";
+    var all = enriched(), flags = flagsFor(all);
     var lines = [HEAD.join(",")];
-    all.filter(function (x) { return x.date.indexOf(prefix) === 0; }).forEach(function (x) {
+    all.forEach(function (x) {
       lines.push([x.date, WD[weekday(x.n)], wk(x.n), SHIFTS[x.shift].name, x.tin, x.early ? "Y" : "", x.tout, hm(x.r.reg), hm(x.r.ear), hm(x.r.bot), hm(x.r.eot), hm(x.r.ot),
         (flags[x.date] || "").replace(/,/g, " ")].join(","));
     });
-    if (lines.length < 2) { toast("이 달에 백업할 기록이 없습니다"); return; }
-    var text = "\uFEFF" + lines.join("\r\n"), name = "출퇴근잔업_" + R.y + "-" + pad(R.m) + ".csv";
-    if (inViewer) {
-      window.claude.use("downloads").then(function (dl) {
-        if (!dl) { toast("이 화면에서는 파일을 받을 수 없습니다"); return; }
-        return dl.save({ filename: name, data: text }).then(function () {}, function (e) { if (e && e.code !== "declined") toast("파일을 저장하지 못했습니다"); });
-      });
-      return;
-    }
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" })); a.download = name;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
-    toast(name + " 백업 완료");
+    if (lines.length < 2) { toast("백업할 기록이 없습니다"); return; }
+    var t = todayStr().replace(/-/g, "");
+    var text = "\uFEFF" + lines.join("\r\n"), name = "출퇴근잔업_전체백업_" + t + ".csv";
+    deliver(name, new Blob([text], { type: "text/csv" }), "text/csv", name + " 백업 완료 (" + (lines.length - 1) + "건)");
   });
   $("b-import").addEventListener("click", function () { $("f-import").click(); });
   $("f-import").addEventListener("change", function () {
     var f = this.files && this.files[0]; this.value = "";
     if (!f) return;
     var rd = new FileReader();
-    rd.onload = function () {
-      var lines = String(rd.result).replace(/^\uFEFF/, "").split(/\r?\n/).filter(function (l) { return l.trim(); });
+    rd.onload = function () { importCsvText(String(rd.result)); };
+    rd.readAsText(f, "utf-8");
+  });
+  function importCsvText(raw) {
+    {
+      var lines = String(raw).replace(/^\uFEFF/, "").split(/\r?\n/).filter(function (l) { return l.trim(); });
       if (lines.length < 2) { toast("가져올 기록이 없습니다"); return; }
       var h = lines[0].split(",").map(function (s) { return s.trim(); });
       var iD = h.indexOf("날짜"), iS = h.indexOf("근무"), iI = h.indexOf("출근"), iO = h.indexOf("퇴근"), iE = h.indexOf("조기출근");
@@ -1048,8 +1115,27 @@ body{margin:0}
         }
         saveRec(recs[i++]).then(nextRec, function () { fail++; nextRec(); });
       })();
-    };
-    rd.readAsText(f, "utf-8");
+    }
+  }
+  function closeBk() { $("bk").hidden = true; $("scrim").hidden = true; }
+  $("bk-close").addEventListener("click", closeBk);
+  $("bk-copy").addEventListener("click", function () {
+    var ta = $("bk-text");
+    var done = function () { toast("복사했습니다. 메모 앱 등에 붙여 두세요."); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, function () { ta.select(); try { document.execCommand("copy"); done(); } catch (e) { toast("글을 길게 눌러 직접 복사하세요"); } });
+    else { ta.select(); try { document.execCommand("copy"); done(); } catch (e) { toast("글을 길게 눌러 직접 복사하세요"); } }
+  });
+  $("bk-import").addEventListener("click", function () {
+    var t = $("bk-text").value;
+    if (!t.trim()) { toast("붙여 넣은 글이 없습니다"); return; }
+    closeBk(); importCsvText(t);
+  });
+  $("b-paste").addEventListener("click", function () {
+    $("bk-title").textContent = "붙여넣기로 가져오기";
+    $("bk-help").textContent = "백업해 둔 글(CSV 내용)을 아래 칸에 붙여 넣고 가져오기를 누르세요.";
+    $("bk-text").value = ""; $("bk-copy").hidden = true;
+    $("scrim").hidden = false; $("bk").hidden = false;
+    setTimeout(function () { $("bk-text").focus(); }, 50);
   });
 
   /* ---------- boot ---------- */
@@ -1058,10 +1144,11 @@ body{margin:0}
     inViewer = has;
     var canShareFiles = false;
     try { canShareFiles = !has && !!navigator.canShare && navigator.canShare({ files: [new File(["x"], "t.xlsx", { type: XLSX_MIME })] }); } catch (e) {}
-    $("b-share").hidden = !canShareFiles;
+    $("b-share").hidden = !canShareFiles || isIOS;
   });
   applyTheme();
   markLimit();
+  setDefaults(state.shift);
   setShift(state.shift);
   setTab(state.tab);
   setTimeout(function () { loadXLSX().catch(function () {}); }, 1200);
