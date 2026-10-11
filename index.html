@@ -30,6 +30,8 @@
   --warn: #B3261E;
   --warn-soft: #FBE9E7;
   --caution: #A86A12;
+  --early: #A86A12;
+  --early-soft: #FBE3BC;
   --scrim: rgba(20, 26, 24, 0.38);
   --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -38,13 +40,13 @@
   :root:not([data-theme="light"]) {
     --bg: #121615; --card: #1B201F; --ink: #E8ECEA; --muted: #9AA4A0; --line: #2E3533;
     --accent: #6CC2AE; --accent-soft: #1E332E; --on-accent: #0E1A17; --night: #9DAAF0; --night-soft: #252A44;
-    --warn: #FF8A80; --warn-soft: #3A1E1C; --caution: #F2B45A; --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark;
+    --warn: #FF8A80; --warn-soft: #3A1E1C; --caution: #F2B45A; --early: #F2B45A; --early-soft: #4A3A1C; --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #121615; --card: #1B201F; --ink: #E8ECEA; --muted: #9AA4A0; --line: #2E3533;
   --accent: #6CC2AE; --accent-soft: #1E332E; --on-accent: #0E1A17; --night: #9DAAF0; --night-soft: #252A44;
-  --warn: #FF8A80; --warn-soft: #3A1E1C; --caution: #F2B45A; --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark;
+  --warn: #FF8A80; --warn-soft: #3A1E1C; --caution: #F2B45A; --early: #F2B45A; --early-soft: #4A3A1C; --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
@@ -197,6 +199,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .cell.day .ot { color: var(--accent); }
 .cell.night { background: var(--night-soft); }
 .cell.night .ot { color: var(--night); }
+.cell.early { background-image: linear-gradient(to bottom, var(--early-soft) 0 52%, transparent 52%); }
+.cell.early .dn { color: var(--early); font-weight: 700; }
+.chip.early { background: var(--early-soft); color: var(--early); }
 .cell.out { opacity: .38; }
 .cell.today { box-shadow: inset 0 0 0 2px var(--ink); }
 .cell.sel { box-shadow: inset 0 0 0 2px var(--accent); }
@@ -386,8 +391,9 @@ body{margin:0}
       <div class="legend">
         <span><i style="background:var(--accent-soft)"></i>주간</span>
         <span><i style="background:var(--night-soft)"></i>야간</span>
-        <span><i style="background:var(--warn);border-radius:50%"></i>11시간 미달</span>
-        <span>· 날짜 누르면 수정</span>
+        <span><i style="background:var(--early-soft)"></i>조기</span>
+        <span><i style="background:var(--warn);border-radius:50%"></i>11h 미달</span>
+        <span>· 날짜 눌러 수정</span>
       </div>
     </div>
 
@@ -591,7 +597,7 @@ body{margin:0}
       b.type = "button";
       b.className = "wl-row" + (x.date === cur ? " cur" : "") + (flags[x.date] ? " flag" : "");
       b.innerHTML = '<span class="d">' + label(x.n) + '</span><span class="chip ' + x.shift + '">' + SHIFTS[x.shift].name + '</span>' +
-        '<span class="t">' + x.tin + "→" + x.tout + '</span><span class="o">' + hm(x.r.ot) + "</span>";
+        '<span class="t">' + x.tin + "→" + x.tout + (x.early && x.r.ear ? ' <span class="chip early">조기</span>' : "") + '</span><span class="o">' + hm(x.r.ot) + "</span>";
       b.setAttribute("aria-label", label(x.n) + " " + SHIFTS[x.shift].name + " 잔업 " + hm(x.r.ot) + ", 눌러서 수정");
       b.addEventListener("click", function () {
         dateEl.value = x.date; inEl.value = x.tin; outEl.value = x.tout; state.early = !!x.early;
@@ -838,7 +844,7 @@ body{margin:0}
       html.push('<div class="wkc">' + wkNo(w0) + "</div>");
       for (var n = w0; n < w0 + 7; n++) {
         var ds = fromDayNum(n), x = byDate[ds];
-        var cls = "cell" + (x ? " " + x.shift : "") + (n < R.first || n >= R.next ? " out" : "") + (n === todayN ? " today" : "") +
+        var cls = "cell" + (x ? " " + x.shift : "") + (x && x.early ? " early" : "") + (n < R.first || n >= R.next ? " out" : "") + (n === todayN ? " today" : "") +
           (flags[ds] ? " flag" : "") + (ds === selDate ? " sel" : "");
         html.push('<button type="button" class="' + cls + '" data-d="' + ds + '" aria-label="' + label(n) + (x ? " 잔업 " + hm(x.r.ot) : " 기록 없음") + '">' +
           '<span class="dn">' + dOf(n).getUTCDate() + '</span><span class="ot">' + (x ? hm(x.r.ot) : "") + "</span></button>");
@@ -863,6 +869,7 @@ body{margin:0}
     var chip = $("sh-chip"), body = $("sh-body"), btns = $("sh-btns");
     if (x) {
       chip.className = "chip " + x.shift; chip.textContent = SHIFTS[x.shift].name;
+      if (x.early && x.r.ear) { chip.textContent += " · 조기 " + hm(x.r.ear); }
       body.innerHTML = '<div class="sheet-body">' +
         '<div><b>출/퇴근</b><span class="sm">' + x.tin + "–" + x.tout + "</span></div>" +
         '<div><b>정규</b><span>' + hm(x.r.reg) + "</span></div>" +
