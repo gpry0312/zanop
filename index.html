@@ -386,6 +386,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .wrow.over .bar i { background: var(--warn); }
 .wrow.over .n.tot { color: var(--warn); }
 .wrow.cur { background: var(--bg); }
+.wrow[role="button"] { cursor: pointer; border-radius: 8px; }
+.wrow[role="button"]:active { background: var(--accent-soft); }
+.wrow .wk { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
 .whead { color: var(--muted); font-size: 10.5px; padding-top: 3px; padding-bottom: 1px; }
 .whead span { font-family: var(--f-body) !important; font-weight: 500 !important; }
 
@@ -472,8 +475,8 @@ body{margin:0}
       </div>
     </div>
     <div class="tabs" role="tablist" aria-label="화면 전환">
-      <button type="button" role="tab" id="tab-in" aria-selected="true" aria-controls="pane-in">입력</button>
-      <button type="button" role="tab" id="tab-board" aria-selected="false" aria-controls="pane-board">누적보드</button>
+      <button type="button" role="tab" id="tab-in" aria-selected="true" aria-controls="pane-in">도장찍기</button>
+      <button type="button" role="tab" id="tab-board" aria-selected="false" aria-controls="pane-board">달력보기</button>
     </div>
   </div>
 
@@ -636,7 +639,7 @@ body{margin:0}
   <div class="sheet-head"><h3 id="st-title" style="font-family:var(--f-body)">설정</h3><button type="button" class="btn-ghost" id="st-close">닫기</button></div>
   <div class="st-list">
     <div class="st-row">
-      <div class="st-t"><b>근무 규칙</b><small>규칙마다 기록·주간 합계·누적보드·엑셀이 따로 관리됩니다. [적용하기]를 누른 규칙으로 모든 화면이 바뀌고, 그 뒤 저장하는 기록은 그 규칙에 쌓입니다.</small></div>
+      <div class="st-t"><b>근무 규칙</b><small>규칙마다 기록·주간 합계·달력보기·엑셀이 따로 관리됩니다. [적용하기]를 누른 규칙으로 모든 화면이 바뀌고, 그 뒤 저장하는 기록은 그 규칙에 쌓입니다.</small></div>
       <div id="rule-list" class="rl"></div>
       <div class="rl-btns">
         <button type="button" class="btn-primary" id="rl-new" style="padding:9px 0;font-size:14px">+ 새 규칙 만들기</button>
@@ -1319,7 +1322,8 @@ body{margin:0}
     });
     $("wd-foot").textContent = "퇴근까지 찍은 기록만 합산합니다. 바깥 원 = 근로시간(정규+잔업) / 주 " + wl + "시간, 안쪽 원 = 잔업 / 잔업 한도(주 " + wl + "시간 − 정규 40시간). 규칙: " + w.limRule.name + ".";
   }
-  function openWd() { wdWs = weekStart(dayNum(formDate())); renderWd(); $("wd").hidden = false; $("wd").scrollTop = 0; document.body.style.overflow = "hidden"; }
+  function openWdAt(ws) { wdWs = ws; renderWd(); $("wd").hidden = false; $("wd").scrollTop = 0; document.body.style.overflow = "hidden"; }
+  function openWd() { openWdAt(weekStart(dayNum(formDate()))); }
   function closeWd() { $("wd").hidden = true; document.body.style.overflow = ""; }
   $("w52").addEventListener("click", openWd);
   $("w52").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openWd(); } });
@@ -2004,12 +2008,18 @@ body{margin:0}
       all.forEach(function (x) { if (x.n >= ws && x.n <= ws + 6) { t += x.r.reg + x.r.ot; o += x.r.ot; } });
       var wlim = LIM(ws), wr = RN(ws);
       var scale = Math.max(wlim + 120, t);
-      rows.push('<div class="wrow' + (t > wlim ? " over" : "") + (todayN >= ws && todayN <= ws + 6 ? " cur" : "") + '">' +
+      rows.push('<div class="wrow' + (t > wlim ? " over" : "") + (todayN >= ws && todayN <= ws + 6 ? " cur" : "") + '" role="button" tabindex="0" data-ws="' + ws + '" aria-label="' + wk(ws) + ' 자세히 보기">' +
         '<span class="wk">' + wk(ws) + '</span><span class="rng">' + md(ws) + "–" + md(ws + 6) + "</span>" +
         '<span class="bar"><i style="width:' + (100 * t / scale) + '%"></i>' + (wr.limit !== 52 ? '<em class="legal" style="left:calc(' + (100 * LEGAL / scale) + '% - 1px)"></em>' : '') + '<em style="left:calc(' + (100 * wlim / scale) + '% - 1px)"></em></span>' +
         '<span class="n tot">' + hm(t) + '</span><span class="n ot">' + hm(o) + "</span></div>");
     }
     wb.innerHTML = rows.join("");
+    // 주차 줄을 누르면 원형 자세히 화면으로 (도장찍기의 주간 카드와 같은 화면)
+    wb.querySelectorAll(".wrow").forEach(function (r) {
+      var go = function () { openWdAt(+r.dataset.ws); };
+      r.addEventListener("click", go);
+      r.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    });
 
     // calendar
     var cal = $("cal");
