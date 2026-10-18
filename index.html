@@ -709,6 +709,8 @@ body{margin:0}
       <div class="re-row"><span>조기출근 기능</span><div class="units st-opt" id="re-early"><button type="button" data-v="on">사용</button><button type="button" data-v="off">사용 안 함</button></div></div>
       <div class="re-row"><span>다음 출근 가능</span><div class="units st-opt" id="re-rest"><button type="button" data-v="on">사용</button><button type="button" data-v="off">사용 안 함</button><span class="lim-in" id="re-rest-wrap"><input type="number" id="re-resth" min="1" max="24" step="0.5" inputmode="decimal">시간</span></div></div>
       <div class="re-row"><span>주 근로 한도</span><div class="units st-opt"><span class="lim-in"><input type="number" id="re-lim" min="40" max="100" step="1" inputmode="numeric">시간</span></div></div>
+      <div class="re-row"><span>주 정규시간</span><div class="units st-opt"><span class="lim-in"><input type="number" id="re-wreg" min="0" max="80" step="0.5" inputmode="decimal">시간</span></div></div>
+      <small class="re-hint" id="re-wreg-hint">주 잔업 한도 = 주 근로 한도 − 주 정규시간 (법정 기준 40시간 = 하루 8시간 × 5일)</small>
       <div class="re-row"><span>주 시작 요일</span><div class="units st-opt" id="re-week"><button type="button" data-v="mon">월요일</button><button type="button" data-v="sun">일요일</button></div></div>
       <div class="re-row"><span>기본 연차 (해마다 다르면 ⚙ 연차 개수)</span><div class="units st-opt"><span class="lim-in"><input type="number" id="re-leave" min="0" max="40" step="0.5" inputmode="decimal">일</span></div></div>
       <div class="re-row"><span>휴일 근무(특근)</span><div class="units st-opt" id="re-hol"><button type="button" data-v="on">전부 잔업</button><button type="button" data-v="off">평일처럼</button></div></div>
@@ -849,7 +851,8 @@ body{margin:0}
   function newId() { return "r" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36); }
   function baseRule() {
     var p = clone(PRESETS.telcon);
-    return { id: newId(), name: "기본 규칙", from: "2000-01-01", day: p.day, night: p.night, earlyOn: true, restOn: true, restH: 11, limit: 52, weekMon: true, unit: 1, leaveDays: 15, holAll: true };
+    p.day.ls = "12:00"; p.day.le = "13:00";   // 기본 점심시간 12:00~13:00
+    return { id: newId(), name: "기본 규칙", from: "2000-01-01", day: p.day, night: p.night, earlyOn: true, restOn: true, restH: 11, limit: 52, weekMon: true, unit: 1, leaveDays: 15, holAll: true, weekReg: 40 };
   }
   function fixRule(r) {
     var b = baseRule(), o = {};
@@ -873,6 +876,7 @@ body{margin:0}
     o.leaveYears = {};
     if (r.leaveYears && typeof r.leaveYears === "object") Object.keys(r.leaveYears).forEach(function (y) { var v = r.leaveYears[y]; if (/^\d{4}$/.test(y) && typeof v === "number" && v >= 0 && v <= 40) o.leaveYears[y] = v; });
     o.holAll = typeof r.holAll === "boolean" ? r.holAll : true;
+    o.weekReg = typeof r.weekReg === "number" && r.weekReg >= 0 && r.weekReg <= 80 ? r.weekReg : 40;
     return o;
   }
   function loadRules() {
@@ -1230,7 +1234,7 @@ body{margin:0}
     var g = $("w52-gauge"), lab = $("w52-lab");
     g.querySelectorAll(".tick").forEach(function (t) { t.remove(); });
     lab.innerHTML = "";
-    var marks = wl > 40 ? [[2400, "40h", ""]] : [];
+    var wrg = RN(d0).weekReg, marks = wrg > 0 && wrg < wl ? [[wrg * 60, (wrg % 1 ? wrg.toFixed(1) : wrg) + "h", ""]] : [];
     if (wl !== 52) marks.push([LEGAL, "52", ""]);
     marks.push([lim, wl + "h", " lim"]);
     marks.forEach(function (m) {
@@ -1252,13 +1256,14 @@ body{margin:0}
   function renderWd() {
     var w = weekData(wdWs), lim = w.lim, wl = lim / 60, today = dayNum(todayStr());
     bulkButton($("wd-del"), wk(wdWs), recsIn(wdWs, wdWs + 6).length);
-    var otCap = Math.max(0, lim - 2400), left = lim - w.total, otLeft = otCap - w.ot;
+    var wreg = w.limRule.weekReg, wregTxt = (wreg % 1 ? wreg.toFixed(1) : wreg);
+    var otCap = Math.max(0, lim - wreg * 60), left = lim - w.total, otLeft = otCap - w.ot;
     var el = $("wd");
     el.classList.toggle("over", left < 0); el.classList.toggle("caution", left >= 0 && left < 240);
     $("wd-title").textContent = wk(wdWs); $("wd-range").textContent = label(w.ws) + "–" + label(w.we);
     $("wd-next").disabled = wdWs >= weekStart(today);
 
-    // 원형 시계: 바깥 = 근로시간 / 주 한도, 안쪽 = 잔업 / 잔업 한도(주 한도 − 40시간)
+    // 원형 시계: 바깥 = 근로시간 / 주 한도, 안쪽 = 잔업 / 잔업 한도(주 한도 − 규칙의 주 정규시간)
     var g = $("wd-svg"); g.innerHTML = "";
     var cx = 150, cy = 150, R1 = 106, R2 = 80;
     g.appendChild(sv("circle", { cx: cx, cy: cy, r: R1, fill: "none", "stroke-width": 18, "class": "trk" }));
@@ -1274,12 +1279,13 @@ body{margin:0}
       var big = h % 4 === 0, a = (h / wl) * 2 * Math.PI - Math.PI / 2, r1 = 119, r2 = big ? 128 : 123;
       g.appendChild(sv("line", { x1: cx + r1 * Math.cos(a), y1: cy + r1 * Math.sin(a), x2: cx + r2 * Math.cos(a), y2: cy + r2 * Math.sin(a), "class": big ? "tk big" : "tk" }));
     }
-    [[0, wl + "h", "lm"], [40, "40h", ""], [wl / 2, Math.round(wl / 2) + "h", ""]].forEach(function (m) {
-      if (m[2] === "" && m[0] !== 40 && Math.abs(m[0] - 40) < 6) return;
+    [[0, wl + "h", "lm"], [wreg, wregTxt + "h", "", 1], [wl / 2, Math.round(wl / 2) + "h", ""]].forEach(function (m) {
+      if (m[3] && !(wreg > 0)) return;
+      if (m[2] === "" && !m[3] && Math.abs(m[0] - wreg) < 6) return;
       if (m[0] >= wl) return;
       var a = (m[0] / wl) * 2 * Math.PI - Math.PI / 2, r = 140;
       var t = sv("text", { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) + 4, "text-anchor": "middle", "class": "tl " + m[2] }); t.textContent = m[1]; g.appendChild(t);
-      if (m[0] === 40) { var r3 = 115, r4 = 131; g.appendChild(sv("line", { x1: cx + r3 * Math.cos(a), y1: cy + r3 * Math.sin(a), x2: cx + r4 * Math.cos(a), y2: cy + r4 * Math.sin(a), "class": "tk m40" })); }
+      if (m[3]) { var r3 = 115, r4 = 131; g.appendChild(sv("line", { x1: cx + r3 * Math.cos(a), y1: cy + r3 * Math.sin(a), x2: cx + r4 * Math.cos(a), y2: cy + r4 * Math.sin(a), "class": "tk m40" })); }
     });
     // 지금 위치 바늘
     var na = (Math.min(w.total, lim) / lim) * 2 * Math.PI - Math.PI / 2;
@@ -1291,7 +1297,7 @@ body{margin:0}
     $("wd-l-work").textContent = hm(w.total);
     $("wd-l-work2").textContent = "정규 " + hm(w.reg) + (w.paid ? " · 유급휴가 " + hm(w.paid) + " 별도" : "") + " · 한도 " + wl + "h";
     $("wd-l-ot").textContent = hm(w.ot);
-    $("wd-l-ot2").textContent = otCap ? "잔업 한도 " + hm(otCap) + " 중" : "한도 40h 이하";
+    $("wd-l-ot2").textContent = otCap ? "잔업 한도 " + hm(otCap) + " 중" : "잔업 한도 없음";
     $("wd-s-left").textContent = (left < 0 ? "+" : "") + hm(Math.abs(left)) + (left < 0 ? " 초과" : "");
     $("wd-s-left").className = left < 0 ? "neg" : "";
     $("wd-s-otleft").textContent = (otLeft < 0 ? "+" : "") + hm(Math.abs(otLeft)) + (otLeft < 0 ? " 초과" : "");
@@ -1327,7 +1333,7 @@ body{margin:0}
       }
       row.innerHTML = html; box.appendChild(row);
     });
-    $("wd-foot").textContent = "퇴근까지 찍은 기록만 합산합니다. 바깥 원 = 근로시간(정규+잔업) / 주 " + wl + "시간, 안쪽 원 = 잔업 / 잔업 한도(주 " + wl + "시간 − 정규 40시간). 규칙: " + w.limRule.name + ".";
+    $("wd-foot").textContent = "퇴근까지 찍은 기록만 합산합니다. 바깥 원 = 근로시간(정규+잔업) / 주 " + wl + "시간, 안쪽 원 = 잔업 / 잔업 한도(주 " + wl + "시간 − 주 정규 " + wregTxt + "시간). 규칙: " + w.limRule.name + ".";
   }
   function openWdAt(ws) { wdWs = ws; renderWd(); $("wd").hidden = false; $("wd").scrollTop = 0; document.body.style.overflow = "hidden"; }
   function openWd() { openWdAt(weekStart(dayNum(formDate()))); }
@@ -1542,7 +1548,7 @@ body{margin:0}
   $("st-close").addEventListener("click", closeSt);
   function ruleSummary(r) {
     var d = r.day;
-    return "주간 " + d.start + "~" + d.end + " · 잔업 " + d.ot + "~" + (r.night.on ? " · 야간 " + r.night.start + "~" + r.night.end : "") + " · 주 " + r.limit + "h";
+    return "주간 " + d.start + "~" + d.end + " · 잔업 " + d.ot + "~" + (r.night.on ? " · 야간 " + r.night.start + "~" + r.night.end : "") + " · 주 " + r.limit + "h (잔업 " + (Math.round((r.limit - r.weekReg) * 10) / 10) + "h)";
   }
   function recCount(id) { return store.all.filter(function (x) { return x.rid === id; }).length; }
   function markSettings() {
@@ -1621,7 +1627,7 @@ body{margin:0}
       if (id === activeId) applyRule(rules[0].id); else { openSt(); renderAll(); }
     });
   }
-  $("rl-new").addEventListener("click", function () { var c = clone(activeRule()); c.id = newId(); c.name = ""; openRe("new", c); });
+  $("rl-new").addEventListener("click", function () { var c = clone(activeRule()); c.id = newId(); c.name = ""; c.day.ls = "12:00"; c.day.le = "13:00"; openRe("new", c); });
   $("rl-import").addEventListener("click", function () { openRx("import"); });
 
   /* 규칙 편집 */
@@ -1638,7 +1644,7 @@ body{margin:0}
     $("re-name").value = r.name; reFrom = r.from || "2000-01-01";
     fillSched("d", r.day); fillSched("n", r.night);
     segSet("re-n-on", r.night.on ? "on" : "off"); segSet("re-early", r.earlyOn ? "on" : "off"); segSet("re-rest", r.restOn ? "on" : "off");
-    $("re-resth").value = r.restH; $("re-lim").value = r.limit; $("re-leave").value = r.leaveDays; reLY = clone(r.leaveYears || {}); segSet("re-hol", r.holAll === false ? "off" : "on"); segSet("re-week", r.weekMon ? "mon" : "sun"); segSet("re-unit", r.unit);
+    $("re-resth").value = r.restH; $("re-lim").value = r.limit; $("re-leave").value = r.leaveDays; $("re-wreg").value = r.weekReg; reLY = clone(r.leaveYears || {}); segSet("re-hol", r.holAll === false ? "off" : "on"); segSet("re-week", r.weekMon ? "mon" : "sun"); segSet("re-unit", r.unit);
     reSync();
   }
   function readSched(k) { var o = {}; ["start", "end", "ls", "le", "ot"].forEach(function (f) { o[f] = $("re-" + k + "-" + f).value; }); o.reg = +$("re-" + k + "-reg").value; return o; }
@@ -1647,7 +1653,7 @@ body{margin:0}
     return { id: reId, name: $("re-name").value.trim(), from: reFrom, day: d, night: n,
       earlyOn: segGet("re-early") === "on", restOn: segGet("re-rest") === "on", restH: Math.round(+$("re-resth").value * 2) / 2,
       limit: Math.round(+$("re-lim").value), weekMon: segGet("re-week") === "mon", unit: +segGet("re-unit") || 1,
-      leaveDays: Math.round(+$("re-leave").value * 2) / 2, leaveYears: reLY, holAll: segGet("re-hol") !== "off" };
+      leaveDays: Math.round(+$("re-leave").value * 2) / 2, leaveYears: reLY, holAll: segGet("re-hol") !== "off", weekReg: Math.round(+$("re-wreg").value * 2) / 2 };
   }
   function checkSched(sc, nm) {
     var S = toMin(sc.start), E = toMin(sc.end), O = toMin(sc.ot), LS = toMin(sc.ls), LE = toMin(sc.le);
@@ -1666,10 +1672,18 @@ body{margin:0}
     if (!(r.limit >= 40 && r.limit <= 100)) return "주 한도는 40~100시간입니다";
     if (r.restOn && !(r.restH >= 1 && r.restH <= 24)) return "휴식 시간은 1~24시간입니다";
     if (!(r.leaveDays >= 0 && r.leaveDays <= 40)) return "연간 연차는 0~40일입니다";
+    if (!($("re-wreg").value !== "" && r.weekReg >= 0 && r.weekReg <= 80)) return "주 정규시간은 0~80시간입니다";
+    if (r.weekReg > r.limit) return "주 정규시간(" + r.weekReg + ")이 주 근로 한도(" + r.limit + ")보다 큽니다";
     for (var i = 0; i < rules.length; i++) if (rules[i].id !== r.id && rules[i].name === r.name) return "같은 이름의 규칙 '" + r.name + "'이 이미 있습니다";
     return "";
   }
+  function wregHint() {
+    var L = +$("re-lim").value, W = +$("re-wreg").value;
+    $("re-wreg-hint").textContent = (L && $("re-wreg").value !== "" && W <= L) ? "→ 주 잔업 한도 " + (Math.round((L - W) * 10) / 10) + "시간 (주 근로 한도 " + L + " − 주 정규 " + W + "). 법정 기준은 40시간(하루 8시간 × 5일)" : "주 잔업 한도 = 주 근로 한도 − 주 정규시간 (법정 기준 40시간 = 하루 8시간 × 5일)";
+  }
+  ["re-lim", "re-wreg"].forEach(function (id) { $(id).addEventListener("input", wregHint); });
   function reSync() {
+    wregHint();
     $("re-n-box").hidden = segGet("re-n-on") !== "on";
     $("re-rest-wrap").hidden = segGet("re-rest") !== "on";
     var r = readRe(), msg = checkSched(r.day, "주간") || (r.night.on ? checkSched(r.night, "야간") : "");
