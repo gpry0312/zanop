@@ -48,6 +48,24 @@
   --accent: #6CC2AE; --accent-soft: #1E332E; --on-accent: #0E1A17; --night: #9DAAF0; --night-soft: #252A44;
   --warn: #FF8A80; --warn-soft: #3A1E1C; --caution: #F2B45A; --early: #F2B45A; --early-soft: #4A3A1C; --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark;
 }
+/* 추가 스킨 (설정 → 화면) */
+:root[data-skin="red"]{--bg:#FFF7E8;--card:#FFFFFF;--ink:#2A1E14;--muted:#7A6A5C;--line:#EADFCF;--accent:#E0392B;--accent-soft:#FDE3DF;--on-accent:#FFFFFF;--night:#2F6FDB;--night-soft:#E1EAFB;--early:#C98A12;--early-soft:#FBE7B8;--caution:#C98A12;--warn:#9C1640;--warn-soft:#F7DDE6;}
+:root[data-skin="ocean"]{--bg:#EEF3F8;--card:#FFFFFF;--ink:#14243A;--muted:#5E6B7C;--line:#D6E0EA;--accent:#2563C9;--accent-soft:#DCE8FA;--on-accent:#FFFFFF;--night:#6B4FC8;--night-soft:#ECE6FA;--early:#C77A12;--early-soft:#FBE6C4;--caution:#C77A12;}
+:root[data-skin="lavender"]{--bg:#F4F1FA;--card:#FFFFFF;--ink:#2A2238;--muted:#6E6580;--line:#E2DCEE;--accent:#7B5CD6;--accent-soft:#ECE5FB;--on-accent:#FFFFFF;--night:#3F6FD1;--night-soft:#E3ECFA;--early:#C2721C;--early-soft:#FBE5CC;--caution:#C2721C;}
+:root[data-skin="peach"]{--bg:#FFF3EE;--card:#FFFFFF;--ink:#3A2420;--muted:#86685F;--line:#F2DDD4;--accent:#E8664E;--accent-soft:#FDE3DB;--on-accent:#FFFFFF;--night:#3E7CB1;--night-soft:#E1EDF7;--early:#B9851A;--early-soft:#F8E8BE;--caution:#B9851A;--warn:#A3122A;--warn-soft:#F8DCE0;}
+:root[data-skin="mint"]{--bg:#EEF8F5;--card:#FFFFFF;--ink:#16302A;--muted:#5F756F;--line:#D3EAE3;--accent:#14A38B;--accent-soft:#D5F2EB;--on-accent:#FFFFFF;--night:#4C6FD8;--night-soft:#E3EAFB;--early:#C27C14;--early-soft:#FBE6C2;--caution:#C27C14;}
+:root[data-skin="navy"]{--bg:#EEF0F6;--card:#FFFFFF;--ink:#141C33;--muted:#5C6378;--line:#D8DCE8;--accent:#1E2F6B;--accent-soft:#DFE4F3;--on-accent:#FFFFFF;--night:#7A55C9;--night-soft:#ECE5FA;--early:#C27C14;--early-soft:#FBE6C2;--caution:#C27C14;}
+:root[data-skin="pink"]{--bg:#FFF2F6;--card:#FFFFFF;--ink:#3A1F2B;--muted:#8A6573;--line:#F5D9E3;--accent:#E0508A;--accent-soft:#FCE0EB;--on-accent:#FFFFFF;--night:#5A6FD6;--night-soft:#E4E9FB;--early:#C27C14;--early-soft:#FBE6C2;--caution:#C27C14;--warn:#C62828;--warn-soft:#FBE1E1;}
+:root[data-skin="mono"]{--bg:#F2F2F2;--card:#FFFFFF;--ink:#111111;--muted:#6B6B6B;--line:#DDDDDD;--accent:#111111;--accent-soft:#E6E6E6;--on-accent:#FFFFFF;--night:#4A5568;--night-soft:#E2E6EE;--early:#8A6D3B;--early-soft:#F1E8D8;--caution:#8A6D3B;}
+:root[data-skin="olive"]{--bg:#F4F4EC;--card:#FFFFFF;--ink:#262A18;--muted:#6D7158;--line:#E2E3D2;--accent:#6B7B2A;--accent-soft:#E7ECD1;--on-accent:#FFFFFF;--night:#3F6FA8;--night-soft:#E1EAF5;--early:#B4741A;--early-soft:#F7E3C3;--caution:#B4741A;}
+:root[data-skin="gold"]{--bg:#121212;--card:#1E1E1E;--ink:#F2EFE6;--muted:#A39E92;--line:#2F2D29;--accent:#F5C518;--accent-soft:#3A3218;--on-accent:#141414;--night:#8FB4FF;--night-soft:#1F2A40;--early:#FF9F5A;--early-soft:#40291A;--caution:#FF9F5A;}
+:root[data-skin="dnavy"]{--bg:#0E1424;--card:#172036;--ink:#E8ECF5;--muted:#98A2B8;--line:#26314A;--accent:#5EA0FF;--accent-soft:#1C2D4D;--on-accent:#0E1424;--night:#C49BFF;--night-soft:#2A2248;--early:#FFB35C;--early-soft:#3D2C18;--caution:#FFB35C;}
+.skins { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.skins button { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 12px; padding: 7px 2px 6px; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: var(--f-body); min-width: 0; }
+.skins button .sw2 { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(0,0,0,.12); position: relative; overflow: hidden; }
+.skins button .sw2 i { position: absolute; right: 0; bottom: 0; width: 50%; height: 50%; }
+.skins button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+.skins button span.nm { text-align: center; line-height: 1.2; word-break: keep-all; max-width: 100%; letter-spacing: -0.02em; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; padding: 0 12px 24px; }
@@ -635,8 +653,7 @@ body{margin:0}
     </div>
     <div class="st-row">
       <div class="st-t"><b>화면</b></div>
-      <div class="units st-opt themes" role="group" aria-label="화면 스킨">
-        <button type="button" data-t="light" aria-pressed="true">밝게</button><button type="button" data-t="dark" aria-pressed="false">어둡게</button>
+      <div class="themes skins" role="group" aria-label="화면 스킨" id="skin-grid">
       </div>
     </div>
   </div>
@@ -1013,7 +1030,7 @@ body{margin:0}
     var saved = JSON.parse(localStorage.getItem("ot-calc") || "{}");
     if (SHIFTS[saved.shift]) state.shift = saved.shift;
     if (saved.tab === "board") state.tab = "board";
-    if (saved.theme === "light" || saved.theme === "dark") state.theme = saved.theme;
+    if (typeof saved.theme === "string" && /^[a-z]+$/.test(saved.theme)) state.theme = saved.theme;
   } catch (e) {}
   function savePrefs() {
     try { localStorage.setItem("ot-calc", JSON.stringify({ shift: state.shift, tab: state.tab, theme: state.theme })); } catch (e) {}
@@ -1481,14 +1498,25 @@ body{margin:0}
   function markLimit() {}
   /* 화면 스킨: 밝게 / 어둡게 (처음엔 휴대폰 설정을 따름) */
   var darkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  var SKINS = [["light", "기본 초록", 0, "#F3F4F1", "#1F6B5C"], ["dark", "어둡게", 1, "#121615", "#6CC2AE"], ["red", "봉펀치 레드", 0, "#FFF7E8", "#E0392B"], ["ocean", "오션 블루", 0, "#EEF3F8", "#2563C9"], ["lavender", "라벤더", 0, "#F4F1FA", "#7B5CD6"], ["peach", "피치 코랄", 0, "#FFF3EE", "#E8664E"], ["mint", "민트", 0, "#EEF8F5", "#14A38B"], ["navy", "네이비", 0, "#EEF0F6", "#1E2F6B"], ["pink", "핑크", 0, "#FFF2F6", "#E0508A"], ["mono", "흑백", 0, "#F2F2F2", "#111111"], ["olive", "올리브", 0, "#F4F4EC", "#6B7B2A"], ["gold", "다크 골드", 1, "#121212", "#F5C518"], ["dnavy", "다크 네이비", 1, "#0E1424", "#5EA0FF"]];
+  function skinOf(k) { for (var i = 0; i < SKINS.length; i++) if (SKINS[i][0] === k) return SKINS[i]; return null; }
+  (function () {
+    var g = $("skin-grid");
+    SKINS.forEach(function (sk) {
+      var b = document.createElement("button"); b.type = "button"; b.dataset.t = sk[0]; b.setAttribute("aria-pressed", "false");
+      b.innerHTML = '<span class="sw2" style="background:' + sk[3] + '"><i style="background:' + sk[4] + '"></i></span><span class="nm"></span>';
+      b.querySelector(".nm").textContent = sk[1]; g.appendChild(b);
+    });
+  })();
   function effTheme() { return state.theme || (darkMQ && darkMQ.matches ? "dark" : "light"); }
   function applyTheme() {
-    var t = effTheme();
-    if (state.theme) document.documentElement.setAttribute("data-theme", state.theme);
-    else document.documentElement.removeAttribute("data-theme");
+    if (state.theme && !skinOf(state.theme)) state.theme = null;
+    var t = effTheme(), sk = skinOf(t), de = document.documentElement;
+    if (state.theme) de.setAttribute("data-theme", sk[2] ? "dark" : "light"); else de.removeAttribute("data-theme");
+    if (state.theme && t !== "light" && t !== "dark") de.setAttribute("data-skin", t); else de.removeAttribute("data-skin");
     document.querySelectorAll(".themes button").forEach(function (x) { x.setAttribute("aria-pressed", x.dataset.t === t); });
     var mc = document.querySelector('meta[name="theme-color"]');
-    if (mc) mc.setAttribute("content", t === "dark" ? "#121615" : "#F3F4F1");
+    if (mc) mc.setAttribute("content", sk ? sk[3] : "#F3F4F1");
   }
   document.querySelectorAll(".themes button").forEach(function (b) {
     b.addEventListener("click", function () { state.theme = b.dataset.t; applyTheme(); savePrefs(); });
